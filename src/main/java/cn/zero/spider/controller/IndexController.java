@@ -5,6 +5,7 @@ import cn.zero.spider.util.Ajax;
 import cn.zero.spider.webmagic.page.BiQuGeIndexPageProcessor;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import io.swagger.annotations.ApiOperation;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,13 +53,13 @@ public class IndexController extends BaseController {
      * @return model and view
      */
     @GetMapping(value = {"", "index"})
-    public Ajax index() {
-        JSONObject jsonObject = new JSONObject();
+    @ApiOperation(value = "首页", notes = "返回首页数据，注意：这个没有封装到ajax类当中")
+    @SuppressWarnings("all")
+    public List<NovelsList> index() {
         BoundHashOperations<String, String, String> boundHashOperations = stringRedisTemplate.boundHashOps("novelsList");
         List<NovelsList> novelsLists = new ArrayList<>(6);
         boundHashOperations.entries().forEach((k, v) -> novelsLists.add(JSON.parseObject(v, NovelsList.class)));
-        jsonObject.put("novelsLists", novelsLists);
-        return new Ajax(jsonObject);
+        return novelsLists;
     }
 
     /**
@@ -67,6 +68,7 @@ public class IndexController extends BaseController {
      * @return model and view
      */
     @GetMapping("/updateIndex")
+    @ApiOperation(value = "更新首页")
     public Ajax spiderIndex() {
 
         SetOperations<String, String> opsForSet = stringRedisTemplate.opsForSet();

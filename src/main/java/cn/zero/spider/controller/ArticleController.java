@@ -6,6 +6,7 @@ import cn.zero.spider.util.Ajax;
 import cn.zero.spider.webmagic.page.BiQuGePageProcessor;
 import cn.zero.spider.webmagic.pipeline.BiQuGePipeline;
 import com.alibaba.fastjson.JSONObject;
+import io.swagger.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 @RestController
 @RequestMapping("article")
+@Api("小说章节")
 public class ArticleController extends BaseController {
 
     private Logger logger = LoggerFactory.getLogger(ArticleController.class);
@@ -53,6 +55,13 @@ public class ArticleController extends BaseController {
      * @param articleUrl 章节url
      * @return article
      */
+    @ApiImplicitParams(
+            {
+                    @ApiImplicitParam(name = "bookUrl", value = "小说id/小说地址,比如：2_2031", dataType = "String"),
+                    @ApiImplicitParam(name = "articleUrl", value = "章节id/章节地址，比如：1198300", dataTypeClass = String.class)
+            }
+    )
+    @ApiOperation(value = "小说章节")
     @GetMapping(value = "/{bookUrl}/{articleUrl}")
     public Ajax article(@PathVariable("bookUrl") String bookUrl, @PathVariable("articleUrl") String articleUrl, HttpServletResponse response) {
         Cookie cookie = new Cookie(bookUrl, articleUrl);
@@ -90,5 +99,4 @@ public class ArticleController extends BaseController {
                 , previous != null ? "article/" + previous.getBookUrl() + "/" + previous.getUrl() : null);
         return new Ajax(jsonObject, "获取章节成功");
     }
-
 }

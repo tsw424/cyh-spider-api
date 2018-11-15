@@ -1,11 +1,14 @@
 package cn.zero.spider.util;
 
+import io.swagger.annotations.ApiModel;
+
 import java.io.Serializable;
 
 /**
  * @author 蔡元豪
  * @date 2018/11/15 15:45
  */
+@ApiModel(value = "Ajax",description = "ajax返回封装,注意：所有的信息都通过它返回，封装在data字段中")
 public class Ajax implements Serializable {
     private int code=200;
     private Object data;

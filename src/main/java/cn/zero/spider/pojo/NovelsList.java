@@ -1,5 +1,7 @@
 package cn.zero.spider.pojo;
 
+import io.swagger.annotations.ApiModel;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -9,13 +11,15 @@ import java.util.List;
  * @author 蔡元豪
  * @date 2018/6/24 14:10
  */
+@ApiModel(value = "NovelsList", description = "首页信息封装")
 public class NovelsList implements Serializable {
+
+    private String type;
     /**
      * 栏目置顶文章
      */
     private Book top;
     private List<Book> books;
-    private String type;
 
     public Book getTop() {
         return top;

@@ -1,12 +1,14 @@
 package cn.zero.spider.pojo;
 
+import io.swagger.annotations.ApiModel;
+
 import java.io.Serializable;
 
 /**
  * @author 蔡元豪
  * @date 2018/6/23 19:30
  */
-
+@ApiModel(value = "Book",description = "小说信息")
 public class Book implements Serializable {
 
     /**

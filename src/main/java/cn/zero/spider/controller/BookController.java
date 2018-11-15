@@ -10,6 +10,9 @@ import cn.zero.spider.webmagic.page.BiQuGeSearchPageProcessor;
 import cn.zero.spider.webmagic.pipeline.BiQuGePipeline;
 import cn.zero.spider.webmagic.task.AgainSpider;
 import com.alibaba.fastjson.JSONObject;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,13 +50,10 @@ public class BookController extends BaseController {
      */
     @Autowired
     private BiQuGePipeline biQuGePipeline;
-
     @Autowired
     private BiQuGePageProcessor biQuGePageProcessor;
-
     @Autowired
     private AgainSpider againSpider;
-
     @Autowired
     private RedisScheduler redisScheduler;
     @Autowired
@@ -65,6 +65,8 @@ public class BookController extends BaseController {
      * @param bookUrl 小说url
      * @return book book
      */
+    @ApiOperation(value = "小说详情页", notes = "当没有获取到小说时会开始爬取小说")
+    @ApiImplicitParam(name = "bookUrl", value = "小说地址或者id,比如：2_2031")
     @GetMapping(value = "/{bookUrl}")
     public Ajax book(@PathVariable("bookUrl") String bookUrl, HttpServletRequest request) {
         JSONObject jsonObject = new JSONObject();
@@ -92,7 +94,6 @@ public class BookController extends BaseController {
                     //url管理
                     .setScheduler(redisScheduler)
                     .thread(20).runAsync();
-            jsonObject.put("code", 500);
             return new Ajax(500, null, "小说爬取中");
         }
         return new Ajax(jsonObject, "获取成功");
@@ -106,6 +107,12 @@ public class BookController extends BaseController {
      * @return m
      */
     @PostMapping(value = "/search")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "key", value = "小说关键字", required = true),
+            @ApiImplicitParam(name = "page", value = "当前分页页数", required = false)
+
+    })
+    @ApiOperation(value = "搜索小说")
     public Ajax search(@RequestBody @RequestParam(value = "key") String key,
                        @RequestBody @RequestParam(value = "page", required = false) Integer page) {
         ResultItems resultItems = null;
@@ -128,11 +135,11 @@ public class BookController extends BaseController {
         return new Ajax(jsonObject, "查询成功");
     }
 
-
     /**
      * 手动更新小说
      */
-    @RequestMapping("booksUpdate")
+    @GetMapping("booksUpdate")
+    @ApiOperation("更新小说/手动更新数据库已有小说，可以不做到前端")
     public void update() {
         againSpider.books();
     }
