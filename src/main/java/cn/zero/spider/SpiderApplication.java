@@ -31,6 +31,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
 import us.codecraft.webmagic.scheduler.RedisScheduler;
 
 /**
@@ -41,6 +42,7 @@ import us.codecraft.webmagic.scheduler.RedisScheduler;
 @MapperScan({"cn.zero.spider.dao"})
 @EnableCaching
 @EnableScheduling
+@EnableSwagger2
 public class SpiderApplication extends SpringBootServletInitializer {
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {

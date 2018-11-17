@@ -27,6 +27,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Map;
 
 /**
  * 小说控制器
@@ -102,26 +103,23 @@ public class BookController extends BaseController {
     /**
      * 查询小说
      *
-     * @param key  查询关键字
-     * @param page 分页
      * @return m
      */
-    @PostMapping(value = "/search")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "key", value = "小说关键字", required = true),
             @ApiImplicitParam(name = "page", value = "当前分页页数", required = false)
 
     })
     @ApiOperation(value = "搜索小说")
-    public Ajax search(@RequestBody @RequestParam(value = "key") String key,
-                       @RequestBody @RequestParam(value = "page", required = false) Integer page) {
+    @PostMapping(value = "/search")
+    public Ajax search(@RequestBody Map<String,Object> map) {
         ResultItems resultItems = null;
         JSONObject jsonObject = new JSONObject();
         try {
-            String encodeKey = URLEncoder.encode(key, "gb2312");
+            String encodeKey = URLEncoder.encode(String.valueOf(map.get("key")), "gb2312");
             resultItems = Spider.create(new BiQuGeSearchPageProcessor())
                     .get("http://www.biquge.com.tw/modules/article/soshu.php?searchkey=+"
-                            + encodeKey + (page == null ? "" : "&page=" + page));
+                            + encodeKey + (map.get("page") == null ? "" : "&page=" + map.get("page")));
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -129,9 +127,9 @@ public class BookController extends BaseController {
             resultItems.getAll().forEach(jsonObject::put);
         }
         //搜索关键字
-        jsonObject.put("key", key);
+        jsonObject.put("key", String.valueOf(map.get("key")));
         //当前页面
-        jsonObject.put("currentPage", page != null ? page : 1);
+        jsonObject.put("currentPage", map.get("page") != null ? map.get("page") : 1);
         return new Ajax(jsonObject, "查询成功");
     }
 
