@@ -66,7 +66,7 @@ public class AgainSpider {
                 .addUrl(urls).addPipeline(biQuGePipeline)
                 //url管理
                 .setScheduler(new RedisScheduler("127.0.0.1"))
-                .thread(20).runAsync();
+                .thread(20).run();
     }
 
 }

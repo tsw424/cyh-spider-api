@@ -16,8 +16,6 @@ import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.SetOperations;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import us.codecraft.webmagic.ResultItems;
 import us.codecraft.webmagic.Spider;
@@ -28,6 +26,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 小说控制器
@@ -39,11 +39,18 @@ import java.util.Map;
 @RequestMapping("books")
 public class BookController extends BaseController {
 
-    private Logger logger = LoggerFactory.getLogger(BookController.class);
+    /**
+     * 加锁
+     */
+    private final ConcurrentHashMap<String, Integer> bookLock = new ConcurrentHashMap<>();
 
+    /**
+     * 全局书籍更新锁
+     */
+    private final ReentrantLock globalUpdateLock = new ReentrantLock();
+    private Logger logger = LoggerFactory.getLogger(BookController.class);
     @Autowired
     private IBookService bookService;
-
     @Autowired
     private IArticleService articleService;
     /**
@@ -57,8 +64,7 @@ public class BookController extends BaseController {
     private AgainSpider againSpider;
     @Autowired
     private RedisScheduler redisScheduler;
-    @Autowired
-    private StringRedisTemplate stringRedisTemplate;
+
 
     /**
      * 小说详情页面
@@ -78,6 +84,7 @@ public class BookController extends BaseController {
             if (request.getCookies() != null) {
                 for (Cookie cookie : request.getCookies()) {
                     if (cookie.getName().equals(bookUrl)) {
+                        //获取章节
                         Article article = articleService.getByUrl(bookUrl, cookie.getValue());
                         article.setContent(null);
                         jsonObject.put("record", article);
@@ -85,17 +92,49 @@ public class BookController extends BaseController {
                 }
             }
         } else {
+            //尝试获取锁
+            if (bookLock.putIfAbsent(bookUrl, 1) != null) {
+                //加锁失败
+                logger.info("小说爬取中，加锁失败");
+                return new Ajax(500, null, "小说爬取中！请不要重复刷新！稍等片刻！");
+            }
+
+            if ((book = bookService.getById(bookUrl)) != null) {
+                try {
+                    jsonObject.put("book", book);
+                    //获取小说读书记录
+                    if (request.getCookies() != null) {
+                        for (Cookie cookie : request.getCookies()) {
+                            if (cookie.getName().equals(bookUrl)) {
+                                Article article = articleService.getByUrl(bookUrl, cookie.getValue());
+                                article.setContent(null);
+                                jsonObject.put("record", article);
+                            }
+                        }
+                    }
+                } finally {
+                    bookLock.remove(bookUrl);
+                }
+                return new Ajax(jsonObject, "获取成功");
+            }
             //如果小说不存在 开始爬取
             logger.info("开始新抓小说：http://www.biquge.com.tw/" + bookUrl);
-            //移出爬取记录
-            SetOperations<String, String> removeBookUrl = stringRedisTemplate.opsForSet();
-            removeBookUrl.remove("set_www.biquge.com.tw", "http://www.biquge.com.tw/" + bookUrl);
-            Spider.create(biQuGePageProcessor)
-                    .addUrl("http://www.biquge.com.tw/" + bookUrl).addPipeline(biQuGePipeline)
-                    //url管理
-                    .setScheduler(redisScheduler)
-                    .thread(20).runAsync();
-            return new Ajax(500, null, "小说爬取中");
+            new Thread(() -> {
+                try {
+                    Spider.create(biQuGePageProcessor)
+                            .addUrl("http://www.biquge.com.tw/" + bookUrl).addPipeline(biQuGePipeline)
+                            //url管理
+                            .setScheduler(redisScheduler)
+                            .thread(20).run();
+                } catch (Exception e) {
+                    logger.warn("抓取小说:http://www.biquge.com.tw/{} 异常", bookUrl);
+                } finally {
+                    bookLock.remove(bookUrl);
+                    logger.info("爬取小说：http://www.biquge.com.tw/{} 完成/解锁", bookUrl);
+                }
+
+            }).start();
+            return new Ajax(500, null, "小说爬取中！");
         }
         return new Ajax(jsonObject, "获取成功");
     }
@@ -112,7 +151,7 @@ public class BookController extends BaseController {
     })
     @ApiOperation(value = "搜索小说")
     @PostMapping(value = "/search")
-    public Ajax search(@RequestBody Map<String,Object> map) {
+    public Ajax search(@RequestBody Map<String, Object> map) {
         ResultItems resultItems = null;
         JSONObject jsonObject = new JSONObject();
         try {
@@ -139,7 +178,16 @@ public class BookController extends BaseController {
     @GetMapping("booksUpdate")
     @ApiOperation("更新小说/手动更新数据库已有小说，可以不做到前端")
     public void update() {
-        againSpider.books();
+        if (globalUpdateLock.tryLock()) {
+            try {
+                againSpider.books();
+            } finally {
+                globalUpdateLock.unlock();
+                logger.warn("全局更新完成，解锁");
+            }
+        } else {
+            logger.warn("全局更新进行中...");
+        }
     }
 
 }

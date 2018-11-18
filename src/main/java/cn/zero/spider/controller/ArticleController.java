@@ -6,7 +6,10 @@ import cn.zero.spider.util.Ajax;
 import cn.zero.spider.webmagic.page.BiQuGePageProcessor;
 import cn.zero.spider.webmagic.pipeline.BiQuGePipeline;
 import com.alibaba.fastjson.JSONObject;
-import io.swagger.annotations.*;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +24,7 @@ import us.codecraft.webmagic.scheduler.RedisScheduler;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 章节控制器
@@ -33,8 +37,11 @@ import javax.servlet.http.HttpServletResponse;
 @Api("小说章节")
 public class ArticleController extends BaseController {
 
+    /**
+     * 章节更新锁
+     */
+    private final ConcurrentHashMap<String, Integer> articleLock = new ConcurrentHashMap<>();
     private Logger logger = LoggerFactory.getLogger(ArticleController.class);
-
     @Autowired
     private IArticleService articleService;
 
@@ -71,19 +78,31 @@ public class ArticleController extends BaseController {
         Article article = articleService.getByUrl(bookUrl, articleUrl);
         JSONObject jsonObject = new JSONObject();
         if (article == null) {
-            SetOperations<String, String> removeBookUrl = stringRedisTemplate.opsForSet();
-            //移出已经爬取的小说章节记录 重新爬取章节
-            logger.info("移出redis爬取章节记录：" + "http://www.biquge.com.tw/" + bookUrl + "/" + articleUrl + ".html");
-            removeBookUrl.remove("set_www.biquge.com.tw", "http://www.biquge.com.tw/" + bookUrl + "/" + articleUrl + ".html");
-            Spider.create(new BiQuGePageProcessor()).addUrl("http://www.biquge.com.tw/" + bookUrl + "/" + articleUrl + ".html")
-                    .addPipeline(biQuGePipeline)
-                    .setScheduler(redisScheduler)
-                    .thread(1).run();
-            Article articleTemp = articleService.getByUrl(bookUrl, articleUrl);
-            if (articleTemp == null) {
-                return new Ajax(500, null, "无效章节");
+            if (articleLock.putIfAbsent(bookUrl + articleUrl, 1) != null) {
+                logger.info("章节爬取中，加锁失败");
+                return new Ajax(500, null, "章节更新中，请稍后访问");
             }
-            jsonObject.put("article", articleTemp);
+            try {
+                if ((article = articleService.getByUrl(bookUrl, articleUrl)) != null) {
+                    jsonObject.put("article", article);
+                } else {
+                    SetOperations<String, String> removeBookUrl = stringRedisTemplate.opsForSet();
+                    //移出已经爬取的小说章节记录 重新爬取章节
+                    logger.info("移出redis爬取章节记录：" + "http://www.biquge.com.tw/" + bookUrl + "/" + articleUrl + ".html");
+                    removeBookUrl.remove("set_www.biquge.com.tw", "http://www.biquge.com.tw/" + bookUrl + "/" + articleUrl + ".html");
+                    Spider.create(new BiQuGePageProcessor()).addUrl("http://www.biquge.com.tw/" + bookUrl + "/" + articleUrl + ".html")
+                            .addPipeline(biQuGePipeline)
+                            .setScheduler(redisScheduler)
+                            .thread(1).run();
+                    Article articleTemp = articleService.getByUrl(bookUrl, articleUrl);
+                    if (articleTemp == null) {
+                        return new Ajax(500, null, "无效章节");
+                    }
+                    jsonObject.put("article", articleTemp);
+                }
+            } finally {
+                articleLock.remove(bookUrl + articleUrl);
+            }
         } else {
             //当前章节
             jsonObject.put("article", article);
