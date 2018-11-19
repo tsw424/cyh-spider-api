@@ -11,10 +11,10 @@ addons:
     - mysql-server
     - mysql-client
 before_install:
-  - sudo mysql -e "use mysql; update user set authentication_string=PASSWORD('') where User='root'; update user set plugin='mysql_native_password';FLUSH PRIVILEGES;"
+  - sudo mysql -e "use mysql; update user set authentication_string=PASSWORD('root') where User='root'; update user set plugin='mysql_native_password';FLUSH PRIVILEGES;"
   - sudo service mysql restart
-  - mysql -e 'create database spider'
-  - mysql -e 'use spider; source ./spider.sql;'
+  - mysql -u root -proot -e 'create database spider'
+  - mysql -u root -proot -e 'use spider; source ./spider.sql;'
   - sudo mkdir -p /usr/local/spider/static/img/index/
   - sudo chmod -R a+wrx /usr/local/spider/static/
 after_success:
