@@ -8,7 +8,7 @@
     <version>version1.0</version>
     <packaging>jar</packaging>
 
-    <name>cyh-spider-gaofeifei</name>
+    <name>cyh-spider-api</name>
     <description>java小说爬虫</description>
 
     <parent>
