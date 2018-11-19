@@ -1,6 +1,8 @@
 language: java
 jdk:
   - oraclejdk8
+services:
+  - redis-server
 addons:
   apt:
     sources:
@@ -9,9 +11,32 @@ addons:
     - mysql-server
     - mysql-client
 before_install:
+  - sudo mysql -e "use mysql; update user set authentication_string=PASSWORD('') where User='root'; update user set plugin='mysql_native_password';FLUSH PRIVILEGES;"
+  - sudo mysql_upgrade -u root -pnew_password
   - sudo service mysql restart
   - mysql -e 'create database spider;'
-before_script:
-- echo "USE mysql;\nUPDATE user SET password=PASSWORD('root') WHERE user='root';\nFLUSH PRIVILEGES;\n" | mysql -u root
+  - mysql -e 'use spider;'
+  - mysql -e "CREATE TABLE `article` (
+    `url` bigint(20) NOT NULL,
+    `bookUrl` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `title` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `content` mediumtext CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    PRIMARY KEY (`url`) USING BTREE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC"
+  - mysql -e "CREATE TABLE `book` (
+    `bookUrl` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `author` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+    `title` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `updateTime` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+    `intro` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+    `latestChapterTitle` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+    `latestChapterUrl` varchar(11) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+    `titlePageUrl` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+    `sourceUrl` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+    `chapterPage` mediumtext CHARACTER SET utf8 COLLATE utf8_general_ci,
+    `views` mediumtext,
+    PRIMARY KEY (`bookUrl`) USING BTREE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC"
+
 after_success:
   - mvn jacoco:report coveralls:report -DrepoToken="${COVER_TOKEN}"

@@ -23,7 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = SpiderApplication.class, properties = "application.properties"
         , webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @SpringBootApplication
-@AutoConfigureMockMvc
 @MapperScan({"cn.zero.spider.dao"})
 public class SpiderApplicationTests {
     @Autowired
