@@ -14,6 +14,6 @@ before_install:
   - sudo mysql -e "use mysql; update user set authentication_string=PASSWORD('') where User='root'; update user set plugin='mysql_native_password';FLUSH PRIVILEGES;"
   - sudo service mysql restart
   - mysql -e 'create database spider'
-  - mysql -e 'use spider; source ./spider.sql'
+  - mysql -e 'use spider;\n source ./spider.sql'
 after_success:
   - mvn jacoco:report coveralls:report -DrepoToken="${COVER_TOKEN}"
