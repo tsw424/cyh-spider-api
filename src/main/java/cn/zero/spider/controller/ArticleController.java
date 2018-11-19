@@ -44,10 +44,6 @@ public class ArticleController extends BaseController {
     private Logger logger = LoggerFactory.getLogger(ArticleController.class);
     @Autowired
     private IArticleService articleService;
-
-    @Autowired
-    private StringRedisTemplate stringRedisTemplate;
-
     @Autowired
     private BiQuGePipeline biQuGePipeline;
 
@@ -86,10 +82,7 @@ public class ArticleController extends BaseController {
                 if ((article = articleService.getByUrl(bookUrl, articleUrl)) != null) {
                     jsonObject.put("article", article);
                 } else {
-                    SetOperations<String, String> removeBookUrl = stringRedisTemplate.opsForSet();
                     //移出已经爬取的小说章节记录 重新爬取章节
-                    logger.info("移出redis爬取章节记录：" + "http://www.biquge.com.tw/" + bookUrl + "/" + articleUrl + ".html");
-                    removeBookUrl.remove("set_www.biquge.com.tw", "http://www.biquge.com.tw/" + bookUrl + "/" + articleUrl + ".html");
                     Spider.create(new BiQuGePageProcessor()).addUrl("http://www.biquge.com.tw/" + bookUrl + "/" + articleUrl + ".html")
                             .addPipeline(biQuGePipeline)
                             .setScheduler(redisScheduler)
