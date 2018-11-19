@@ -15,5 +15,6 @@ before_install:
   - sudo service mysql restart
   - mysql -e 'create database spider'
   - mysql -e 'use spider; source ./spider.sql;'
+  - mkdir -p /usr/local/spider/static/
 after_success:
   - mvn jacoco:report coveralls:report -DrepoToken="${COVER_TOKEN}"
