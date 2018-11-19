@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = SpiderApplication.class, properties = "application.properties"
+@SpringBootTest(classes = SpiderApplication.class, properties = "application-sit.properties"
         , webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @SpringBootApplication
 @MapperScan({"cn.zero.spider.dao"})
