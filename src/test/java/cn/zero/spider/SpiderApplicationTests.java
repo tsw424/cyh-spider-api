@@ -48,12 +48,22 @@ public class SpiderApplicationTests {
     @Test
     public void search() throws Exception {
         mvc.perform(post("/books/search").contentType(MediaType.APPLICATION_JSON_UTF8).accept(MediaType.APPLICATION_JSON)
-                .param("key","斗")).andExpect(status().isOk()).andDo(print());
+                .content("{key:'斗破苍穹'}")).andExpect(status().isOk()).andDo(print());
     }
 
     @Test
     public void books() throws Exception {
-        mvc.perform(get("/books/2_2031").contentType(MediaType.APPLICATION_JSON_UTF8).accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/books/20_20038").contentType(MediaType.APPLICATION_JSON_UTF8).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andDo(print());
+    }
+    @Test
+    public void articles() throws Exception {
+        mvc.perform(get("/article/20_20038/9450132").contentType(MediaType.APPLICATION_JSON_UTF8).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andDo(print());
+    }
+    @Test
+    public void booksUpdate() throws Exception {
+        mvc.perform(get("/books/booksUpdate").contentType(MediaType.APPLICATION_JSON_UTF8).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk()).andDo(print());
     }
 }
