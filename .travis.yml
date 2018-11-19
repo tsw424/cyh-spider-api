@@ -1,6 +1,17 @@
 language: java
 jdk:
   - oraclejdk8
-
+addons:
+  apt:
+    sources:
+    - mysql-5.7-trusty
+    packages:
+    - mysql-server
+    - mysql-client
+before_install:
+  - sudo service mysql restart
+  - mysql -e 'create database spider;'
+before_script:
+- echo "USE mysql;\nUPDATE user SET password=PASSWORD('root') WHERE user='root';\nFLUSH PRIVILEGES;\n" | mysql -u root
 after_success:
   - mvn jacoco:report coveralls:report -DrepoToken="${COVER_TOKEN}"

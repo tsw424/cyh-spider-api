@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -20,8 +21,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = SpiderApplication.class, properties = "application.properties"
-        , webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+        , webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @SpringBootApplication
+@AutoConfigureMockMvc
 @MapperScan({"cn.zero.spider.dao"})
 public class SpiderApplicationTests {
     @Autowired
