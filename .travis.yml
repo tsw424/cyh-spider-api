@@ -3,6 +3,9 @@ jdk:
   - oraclejdk8
 services:
   - redis-server
+branches:
+  only:
+    - master
 addons:
   apt:
     sources:
