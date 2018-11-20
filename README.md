@@ -5,9 +5,9 @@
 
 小说爬虫  
 ## 环境
->mysql 8  
+>Mysql 5.7+  
 >jdk 1.8  
->redis  
+>Redis  
 
 - 数据库：spider
 - sql文件：spider.sql
