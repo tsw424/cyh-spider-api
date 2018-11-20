@@ -6,7 +6,7 @@
 小说爬虫  
 ## 环境
 >Mysql 5.7+  
->jdk 1.8  
+>Java 1.8
 >Redis  
 
 - 数据库：spider
