@@ -27,6 +27,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -39,11 +41,12 @@ import java.util.concurrent.locks.ReentrantLock;
 @RequestMapping("books")
 public class BookController extends BaseController {
 
+    private static final int NUMBER_OF_THREADS = 5;
+    private static ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
     /**
      * 加锁
      */
     private final ConcurrentHashMap<String, Integer> bookLock = new ConcurrentHashMap<>();
-
     /**
      * 全局书籍更新锁
      */
@@ -64,7 +67,6 @@ public class BookController extends BaseController {
     private AgainSpider againSpider;
     @Autowired
     private RedisScheduler redisScheduler;
-
 
     /**
      * 小说详情页面
@@ -119,7 +121,7 @@ public class BookController extends BaseController {
             }
             //如果小说不存在 开始爬取
             logger.info("开始新抓小说：http://www.biquge.com.tw/" + bookUrl);
-            new Thread(() -> {
+            executorService.submit(() -> {
                 try {
                     Spider.create(biQuGePageProcessor)
                             .addUrl("http://www.biquge.com.tw/" + bookUrl).addPipeline(biQuGePipeline)
@@ -133,7 +135,7 @@ public class BookController extends BaseController {
                     logger.info("爬取小说：http://www.biquge.com.tw/{} 完成/解锁", bookUrl);
                 }
 
-            }).start();
+            });
             return new Ajax(500, null, "小说爬取中！");
         }
         return new Ajax(jsonObject, "获取成功");
