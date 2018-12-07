@@ -22,7 +22,10 @@ import us.codecraft.webmagic.scheduler.RedisScheduler;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import java.lang.ref.WeakReference;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 章节控制器
@@ -38,13 +41,12 @@ public class ArticleController extends BaseController {
     /**
      * 章节更新锁
      */
-    private final ConcurrentHashMap<String, Integer> articleLock = new ConcurrentHashMap<>();
+    private final Map<String, WeakReference<ReentrantLock>> articleLock = new ConcurrentHashMap<>();
     private Logger logger = LoggerFactory.getLogger(ArticleController.class);
     @Autowired
     private IArticleService articleService;
     @Autowired
     private BiQuGePipeline biQuGePipeline;
-
     @Autowired
     private RedisScheduler redisScheduler;
 
@@ -72,7 +74,8 @@ public class ArticleController extends BaseController {
         Article article = articleService.getByUrl(bookUrl, articleUrl);
         JSONObject jsonObject = new JSONObject();
         if (article == null) {
-            if (articleLock.putIfAbsent(bookUrl + articleUrl, 1) != null) {
+            ReentrantLock articleLock = getArticleLock(bookUrl);
+            if (!articleLock.tryLock()) {
                 logger.info("章节爬取中，加锁失败");
                 return new Ajax(500, null, "章节更新中，请稍后访问");
             }
@@ -92,7 +95,7 @@ public class ArticleController extends BaseController {
                     jsonObject.put("article", articleTemp);
                 }
             } finally {
-                articleLock.remove(bookUrl + articleUrl);
+                articleLock.unlock();
             }
         } else {
             //当前章节
@@ -108,5 +111,9 @@ public class ArticleController extends BaseController {
         jsonObject.put("previous"
                 , previous != null ? "article/" + previous.getBookUrl() + "/" + previous.getUrl() : null);
         return new Ajax(jsonObject, "获取章节成功");
+    }
+
+    private ReentrantLock getArticleLock(String url) {
+        return articleLock.computeIfAbsent(url, value -> new WeakReference<>(new ReentrantLock())).get();
     }
 }

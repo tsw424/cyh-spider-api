@@ -24,6 +24,7 @@ import us.codecraft.webmagic.scheduler.RedisScheduler;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
+import java.lang.ref.WeakReference;
 import java.net.URLEncoder;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,12 +42,15 @@ import java.util.concurrent.locks.ReentrantLock;
 @RequestMapping("books")
 public class BookController extends BaseController {
 
+    /**
+     * 线程池大小 最大同时爬取小说线程
+     */
     private static final int NUMBER_OF_THREADS = 5;
     private static ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
     /**
      * 加锁
      */
-    private final ConcurrentHashMap<String, Integer> bookLock = new ConcurrentHashMap<>();
+    private final Map<String, WeakReference<ReentrantLock>> bookLooks = new ConcurrentHashMap<>();
     /**
      * 全局书籍更新锁
      */
@@ -95,7 +99,8 @@ public class BookController extends BaseController {
             }
         } else {
             //尝试获取锁
-            if (bookLock.putIfAbsent(bookUrl, 1) != null) {
+            ReentrantLock bookLock = getBookLock(bookUrl);
+            if (!bookLock.tryLock()) {
                 //加锁失败
                 logger.info("小说爬取中，加锁失败");
                 return new Ajax(500, null, "小说爬取中！请不要重复刷新！稍等片刻！");
@@ -115,7 +120,7 @@ public class BookController extends BaseController {
                         }
                     }
                 } finally {
-                    bookLock.remove(bookUrl);
+                    bookLock.unlock();
                 }
                 return new Ajax(jsonObject, "获取成功");
             }
@@ -131,7 +136,7 @@ public class BookController extends BaseController {
                 } catch (Exception e) {
                     logger.warn("抓取小说:http://www.biquge.com.tw/{} 异常", bookUrl);
                 } finally {
-                    bookLock.remove(bookUrl);
+                    bookLock.unlock();
                     logger.info("爬取小说：http://www.biquge.com.tw/{} 完成/解锁", bookUrl);
                 }
 
@@ -190,6 +195,10 @@ public class BookController extends BaseController {
         } else {
             logger.warn("全局更新进行中...");
         }
+    }
+
+    private ReentrantLock getBookLock(String url) {
+        return bookLooks.computeIfAbsent(url, value -> new WeakReference<>(new ReentrantLock())).get();
     }
 
 }
