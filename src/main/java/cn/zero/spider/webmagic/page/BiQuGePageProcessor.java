@@ -2,16 +2,12 @@ package cn.zero.spider.webmagic.page;
 
 import cn.zero.spider.pojo.Article;
 import cn.zero.spider.pojo.Book;
-import javafx.application.Application;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.system.ApplicationHome;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.ResourceUtils;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.Spider;
@@ -21,7 +17,6 @@ import us.codecraft.webmagic.utils.UrlUtils;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Objects;
 
 /**
  * 笔趣阁爬虫
